@@ -20,7 +20,7 @@ external_components:
   - source:
       type: git
       url: https://github.com/rh1rich/esphome-morse-code
-    ref: fa78021
+    ref: main
 
 esphome:
   project:
