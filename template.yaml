@@ -200,6 +200,7 @@ light:
     name: 'Light'
     id: light_comp
     output: light_relay
+    restore_mode: RESTORE_DEFAULT_OFF
 
 fan:
   - platform: speed
@@ -207,6 +208,7 @@ fan:
     id: fan_comp
     output: fan_relays
     speed_count: 3
+    restore_mode: RESTORE_DEFAULT_OFF
 
 switch:
   - platform: template
