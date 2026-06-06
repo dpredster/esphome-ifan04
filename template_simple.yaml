@@ -25,9 +25,34 @@ esphome:
   name: $devicename
   friendly_name: $friendly_devicename
   on_boot:
-    priority: 600
-    then:
-      - output.turn_off: buzzer
+    - priority: 600
+      then:
+        - output.turn_off: buzzer
+    - priority: -100
+      then:
+        - if:
+            condition:
+              lambda: return id(saved_light_on);
+            then:
+              - light.turn_on: light_comp
+            else:
+              - light.turn_off: light_comp
+        - if:
+            condition:
+              lambda: return id(saved_fan_on);
+            then:
+              - fan.turn_on:
+                  id: fan_comp
+                  speed: !lambda |-
+                    if (id(saved_fan_speed) < 1) {
+                      return 1;
+                    }
+                    if (id(saved_fan_speed) > 3) {
+                      return 3;
+                    }
+                    return id(saved_fan_speed);
+            else:
+              - fan.turn_off: fan_comp
 
 esp8266:
   board: esp8285
@@ -38,7 +63,7 @@ esp8266:
   restore_from_flash: true
 
 preferences:
-  flash_write_interval: 5min
+  flash_write_interval: 30s
 
 # Enable logging
 # But disable it via UART0, because UART0 is used by the RF receiver
@@ -181,6 +206,10 @@ light:
     id: light_comp
     output: light_relay
     restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - lambda: id(saved_light_on) = true;
+    on_turn_off:
+      - lambda: id(saved_light_on) = false;
 
 fan:
   - platform: speed
@@ -189,6 +218,12 @@ fan:
     output: fan_relays
     speed_count: 3
     restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - lambda: id(saved_fan_on) = true;
+    on_turn_off:
+      - lambda: id(saved_fan_on) = false;
+    on_speed_set:
+      - lambda: id(saved_fan_speed) = x;
 
 switch:
   - platform: template
@@ -264,6 +299,20 @@ ifan_remote:
             lambda: return (command.high == 0x0107 && command.low == 0x000101);
           then:
             - morse_code.start: $code_rc_unpair
+
+globals:
+  - id: saved_fan_on
+    type: bool
+    restore_value: yes
+    initial_value: "false"
+  - id: saved_fan_speed
+    type: int
+    restore_value: yes
+    initial_value: "1"
+  - id: saved_light_on
+    type: bool
+    restore_value: yes
+    initial_value: "false"
 
 script:
   - id: fan_speed_set
